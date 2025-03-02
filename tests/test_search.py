@@ -172,3 +172,8 @@ def test_search_multiple_language():
         assert repo["full_name"].count("/") == 1
         assert repo["full_name"] == f"{repo['owner']['login']}/{repo['name']}"
         assert repo["html_url"] == "https://github.com/" + repo["full_name"]
+
+def test_search_with_timeout():
+    """Test search with custom timeout"""
+    repos = search(languages=["python"], timeout=20)
+    assert repos  
