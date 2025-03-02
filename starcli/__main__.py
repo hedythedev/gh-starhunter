@@ -66,8 +66,8 @@ CACHE_EXPIRATION = 1  # Minutes
 @click.option(
     "--layout",
     "-L",
-    type=click.Choice(["list", "table", "grid"], case_sensitive=False),
-    help="The output format (list, table, or grid), default is list",
+    type=click.Choice(["list", "table", "grid","graph"], case_sensitive=False),
+    help="The output format (list, table, grid, or graph), default is list",
 )
 @click.option(
     "--stars",
@@ -127,6 +127,13 @@ CACHE_EXPIRATION = 1  # Minutes
     default=False,
     hidden=True,
 )
+@click.option(
+    "--timeout",
+    "-T",
+    type=int,
+    default=10,
+    help="Request timeout in seconds, default: 10",
+)
 @click.option("--debug", is_flag=True, default=False, help="Turn on debugging mode")
 def cli(
     lang,
@@ -145,6 +152,7 @@ def cli(
     auth="",
     pager=False,
     nop=False,
+    timeout=10,
 ):
     """Find trending repos on GitHub"""
     if debug:
@@ -201,11 +209,12 @@ def cli(
             not spoken_language and not date_range
         ):  # if filtering by spoken language and date range not required
             tmp_repos = search(
-                lang, created, pushed, stars, topic, user, debug, order, auth
+                lang, created, pushed, stars, topic, user, debug, order, auth,
+                timeout
             )
         else:
             tmp_repos = search_github_trending(
-                lang, spoken_language, order, stars, date_range, debug
+                lang, spoken_language, order, stars, date_range, debug 
             )
 
         if not tmp_repos:  # if search() returned None

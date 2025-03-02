@@ -38,7 +38,11 @@ STATUS_ACTIONS = {
     "unsupported": "The request is not supported.",
     "unknown": "An unknown error occurred.",
     "valid": "The request returned successfully, but an unknown exception occurred.",
+    "timeout": "The request timed out. Try again or increase the timeout value with --timeout.",
 }
+
+# Default timeout in seconds for requests
+DEFAULT_TIMEOUT = 10
 
 FORMAT = "%(message)s"
 
@@ -111,7 +115,7 @@ def get_date(date):
 
 
 def get_valid_request(
-    url: str, auth: t.Optional[str] = ""
+    url: str, auth: t.Optional[str] = "", timeout: int = DEFAULT_TIMEOUT
 ) -> t.Optional[requests.Response]:
     """GET an url with auth and handle a connection error"""
     while True:
@@ -119,9 +123,12 @@ def get_valid_request(
             session = requests.Session()
             if auth:
                 session.auth = (auth.split(":")[0], auth.split(":")[1])
-            request = session.get(url)
+            request = session.get(url, timeout=timeout)
         except requests.exceptions.ConnectionError:
             secho("Internet connection error...", fg="bright_red")
+            return
+        except requests.exceptions.Timeout:
+            secho(STATUS_ACTIONS["timeout"], fg="bright_yellow")
             return
 
         if not request.status_code in (200, 202):
@@ -204,6 +211,7 @@ def search(
     debug=False,
     order="desc",
     auth="",
+    timeout=DEFAULT_TIMEOUT,
 ):
     """Return repositories searched from GitHub API"""
     date_format = "%Y-%m-%d"  # date format in iso format
@@ -252,7 +260,7 @@ def search(
     else:
         debug_logger(debug, "Auth: off")
 
-    request = get_valid_request(url, auth)
+    request = get_valid_request(url, auth, timeout)
     if request is None:
         return request
 

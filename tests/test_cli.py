@@ -332,3 +332,8 @@ class TestCli:
         if not_in_stderr:
             for s in not_in_stderr:
                 assert not s in result.stderr, f"{s} shouldn't be in stderr"
+
+    def test_cli_graph_layout(self):
+        """Test cli when --layout graph is passed"""
+        result = self.cli_result("--layout", "graph", clear_cache=False)
+        self.assertions(result)

@@ -15,6 +15,9 @@ console = Console()
 
 SYMBOL_MAP = {"stars": "★", "forks": "⎇"}
 
+# Block characters for the graph bars
+GRAPH_BLOCKS = "█"
+
 
 def shorten_count(number):
     """Shortens number"""
@@ -52,6 +55,65 @@ def format_date_range(date_range):
         .append(")")
     )
 
+def graph_layout(repos):
+    """Displays repositories in a graph format using rich"""
+    
+    # Convert formatted star/fork counts to integers for calculation
+    def parse_count(count_str):
+        if count_str == "-1":
+            return 0
+        # Handle shortened counts like "90.3k"
+        if isinstance(count_str, str) and 'k' in count_str.lower():
+            # Convert "90.3k" to 90300
+            return int(float(count_str.lower().replace('k', '')) * 1000)
+        return int(count_str)
+    
+    # Find the maximum star count for scaling
+    max_stars = max(parse_count(repo["stargazers_count"]) for repo in repos)
+    max_forks = max(parse_count(repo["forks"]) for repo in repos)
+    
+    # Maximum width for the bar (in characters)
+    max_bar_width = 40
+    
+    table = Table(show_header=False, box=None, padding=(0, 1))
+    table.add_column("Repo", style="bold yellow", no_wrap=True)
+    table.add_column("Stats")
+    table.add_column("Bars", width=max_bar_width + 10)
+    
+    for repo in repos:
+        name = Text(repo["name"], overflow="fold")
+        name.stylize(f"yellow link {repo['html_url']}")
+        
+        stats = format_stats(repo["stargazers_count"], repo["forks"])
+        date_range_col = format_date_range(repo.get("date_range"))
+        stats_text = Text(stats, style="italic blue")
+        if date_range_col:
+            stats_text.append("\n")
+            stats_text.append(date_range_col)
+        
+        # Create bar graphs for stars and forks
+        stars_count = parse_count(repo["stargazers_count"])
+        forks_count = parse_count(repo["forks"])
+        
+        # Scale the bars
+        stars_bar_width = int((stars_count / max_stars) * max_bar_width) if max_stars > 0 else 0
+        forks_bar_width = int((forks_count / max_stars) * max_bar_width) if max_stars > 0 else 0
+        
+        # Create the bars
+        stars_bar = Text(GRAPH_BLOCKS * stars_bar_width, style="bright_yellow")
+        forks_bar = Text(GRAPH_BLOCKS * forks_bar_width, style="bright_blue")
+        
+        # Add labels
+        bars = Text(f"{SYMBOL_MAP['stars']} ", style="bright_yellow")
+        bars.append(stars_bar)
+        bars.append(f" {repo['stargazers_count']}\n")
+        bars.append(f"{SYMBOL_MAP['forks']} ", style="bright_blue")
+        bars.append(forks_bar)
+        bars.append(f" {repo['forks']}")
+        
+        table.add_row(name, stats_text, bars)
+    
+    console.print(table)
 
 def list_layout(repos):
     """Display repositories in a list layout using rich"""
@@ -207,5 +269,7 @@ def print_layout(*args, layout="list"):
         table_layout(*args)
     elif layout == "grid":
         grid_layout(*args)
+    elif layout == "graph":
+        graph_layout(*args)
     else:
         list_layout(*args)
